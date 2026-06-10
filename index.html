@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#2d1f1a">
+  <meta name="description" content="Estoque Advanced Pain - Entrada/Baixa por QR Code">
+  <title>Estoque AP</title>
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%232d1f1a' width='192' height='192'/><text x='50%' y='50%' font-size='80' font-weight='bold' fill='%23b8956a' text-anchor='middle' dominant-baseline='middle'>AP</text></svg>">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --color-bg: #faf7f2;
+      --color-accent: #b8956a;
+      --color-dark: #2d1f1a;
+      --color-error: #d32f2f;
+      --color-success: #388e3c;
+      --font-display: 'Cormorant Garamond', serif;
+      --font-body: 'Syne', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--color-bg);
+      color: var(--color-dark);
+      font-family: var(--font-body);
+      overflow: hidden;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ============ LAYOUT ============ */
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      width: 100vw;
+      max-width: 100%;
+    }
+
+    .header {
+      background: var(--color-dark);
+      color: var(--color-bg);
+      padding: 16px 20px;
+      text-align: center;
+      font-family: var(--font-display);
+      font-size: 24px;
+      font-weight: 600;
+      border-bottom: 3px solid var(--color-accent);
+      flex-shrink: 0;
+    }
+
+    .header .user-info {
+      font-size: 12px;
+      color: var(--color-accent);
+      margin-top: 4px;
+      font-family: var(--font-body);
+    }
+
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ============ SCREENS ============ */
+    .screen {
+      display: none;
+      flex: 1;
+      padding: 20px;
+      flex-direction: column;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    /* ============ LOGIN SCREEN ============ */
+    .login-screen {
+      justify-content: center;
+      align-items: center;
+    }
+
+    .login-card {
+      background: white;
+      border-radius: 8px;
+      padding: 40px 30px;
+      max-width: 100%;
+      width: 100%;
+      box-shadow: 0 4px 12px rgba(45, 31, 26, 0.15);
+    }
+
+    .login-card h2 {
+      font-family: var(--font-display);
+      font-size: 28px;
+      margin-bottom: 24px;
+      text-align: center;
+      color: var(--color-dark);
+    }
+
+    .login-card p {
+      font-size: 12px;
+      color: #666;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--color-dark);
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 12px 14px;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: var(--font-body);
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: var(--color-accent);
+    }
+
+    /* ============ SCANNER SCREEN ============ */
+    .scanner-screen {
+      flex-direction: column;
+    }
+
+    #video {
+      width: 100%;
+      height: 60%;
+      object-fit: cover;
+      background: #000;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+
+    .scanner-controls {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .scanner-controls select {
+      padding: 10px 12px;
+      border: 2px solid var(--color-accent);
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: var(--font-body);
+    }
+
+    .scanner-output {
+      background: white;
+      border-radius: 6px;
+      padding: 12px;
+      margin: 8px 0;
+      font-size: 12px;
+      border-left: 3px solid var(--color-accent);
+      min-height: 30px;
+      display: flex;
+      align-items: center;
+    }
+
+    /* ============ CONFIRMATION SCREEN ============ */
+    .confirmation-screen {
+      justify-content: space-between;
+    }
+
+    .confirmation-box {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .confirmation-box h3 {
+      font-family: var(--font-display);
+      font-size: 18px;
+      margin-bottom: 12px;
+      color: var(--color-accent);
+    }
+
+    .confirmation-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 13px;
+    }
+
+    .confirmation-item:last-child {
+      border: none;
+    }
+
+    .confirmation-item strong {
+      color: var(--color-dark);
+    }
+
+    /* ============ BUTTONS ============ */
+    .btn {
+      padding: 14px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: var(--font-body);
+      transition: all 0.2s;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-primary {
+      background: var(--color-accent);
+      color: white;
+      width: 100%;
+    }
+
+    .btn-primary:active {
+      transform: scale(0.98);
+      opacity: 0.9;
+    }
+
+    .btn-secondary {
+      background: white;
+      color: var(--color-dark);
+      border: 2px solid var(--color-accent);
+      width: 100%;
+    }
+
+    .btn-danger {
+      background: var(--color-error);
+      color: white;
+      width: 100%;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 12px;
+      margin-top: auto;
+    }
+
+    .btn-group .btn {
+      flex: 1;
+    }
+
+    /* ============ STATUS MESSAGES ============ */
+    .status-message {
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      font-size: 13px;
+      text-align: center;
+      display: none;
+    }
+
+    .status-message.show {
+      display: block;
+    }
+
+    .status-message.success {
+      background: var(--color-success);
+      color: white;
+    }
+
+    .status-message.error {
+      background: var(--color-error);
+      color: white;
+    }
+
+    .status-message.info {
+      background: var(--color-accent);
+      color: white;
+    }
+
+    /* ============ RESPONSIVE ============ */
+    @media (max-height: 600px) {
+      .header {
+        padding: 12px 16px;
+        font-size: 20px;
+      }
+      .main {
+        padding: 12px;
+      }
+      .screen {
+        padding: 12px;
+      }
+    }
+
+    @supports (padding: max(0px)) {
+      .container {
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+    }
+
+    /* ============ UTILITIES ============ */
+    .hidden {
+      display: none !important;
+    }
+
+    .loading {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- HEADER -->
+    <div class="header">
+      Estoque AP
+      <div class="user-info" id="userInfo"></div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main">
+      <div id="statusMessage" class="status-message"></div>
+
+      <!-- SCREEN 1: LOGIN -->
+      <div id="loginScreen" class="screen active login-screen">
+        <div class="login-card">
+          <h2>Bem-vindo</h2>
+          <p>Faça login para começar</p>
+          
+          <div class="form-group">
+            <label for="loginName">Seu Nome</label>
+            <input 
+              id="loginName" 
+              type="text" 
+              placeholder="Ex: PETRINA"
+              autocomplete="off"
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="loginPin">PIN (4-6 dígitos)</label>
+            <input 
+              id="loginPin" 
+              type="password" 
+              placeholder="••••"
+              maxlength="6"
+            >
+          </div>
+
+          <button class="btn btn-primary" onclick="handleLogin()">Entrar</button>
+        </div>
+      </div>
+
+      <!-- SCREEN 2: SCANNER -->
+      <div id="scannerScreen" class="screen scanner-screen">
+        <video id="video" autoplay playsinline muted></video>
+        
+        <div class="scanner-controls">
+          <div>
+            <label style="font-size: 12px; display: block; margin-bottom: 6px;">TIPO DE MOVIMENTO</label>
+            <select id="movementType" onchange="updateOperationType()">
+              <option value="">Selecione...</option>
+              <option value="entrada">📥 Entrada</option>
+              <option value="baixa">📤 Baixa/Consumo</option>
+            </select>
+          </div>
+
+          <div id="unidadeContainer">
+            <label style="font-size: 12px; display: block; margin-bottom: 6px;">UNIDADE</label>
+            <select id="unidade" onchange="updateUIElements()">
+              <option value="">Selecione...</option>
+              <option value="CENTRAL">🏥 Central</option>
+              <option value="BARRA">📍 Barra</option>
+              <option value="NOVA IGUAÇU">📍 Nova Iguaçu</option>
+              <option value="MATO GROSSO">📍 Mato Grosso</option>
+              <option value="FUTEBOL">📍 Futebol</option>
+            </select>
+          </div>
+
+          <div id="pacienteContainer" style="display: none;">
+            <label style="font-size: 12px; display: block; margin-bottom: 6px;">PACIENTE (opcional)</label>
+            <input 
+              id="paciente" 
+              type="text" 
+              placeholder="Digite nome ou deixe em branco"
+            >
+          </div>
+
+          <div class="scanner-output">
+            <span id="scanResult">Aponte para o código...</span>
+          </div>
+
+          <button class="btn btn-secondary" onclick="goToConfirmation()">Confirmar Leitura</button>
+          <button class="btn btn-danger" onclick="handleLogout()">Sair</button>
+        </div>
+      </div>
+
+      <!-- SCREEN 3: CONFIRMATION -->
+      <div id="confirmationScreen" class="screen confirmation-screen">
+        <div>
+          <div class="confirmation-box">
+            <h3>Resumo do Movimento</h3>
+            <div class="confirmation-item">
+              <strong>Tipo:</strong>
+              <span id="confirmType"></span>
+            </div>
+            <div class="confirmation-item">
+              <strong>Produto/Kit:</strong>
+              <span id="confirmProduct"></span>
+            </div>
+            <div class="confirmation-item">
+              <strong>Código:</strong>
+              <span id="confirmCode"></span>
+            </div>
+            <div class="confirmation-item">
+              <strong>Unidade:</strong>
+              <span id="confirmUnit"></span>
+            </div>
+            <div id="confirmPatientBox" class="confirmation-item" style="display: none;">
+              <strong>Paciente:</strong>
+              <span id="confirmPatient"></span>
+            </div>
+            <div class="confirmation-item">
+              <strong>Quem:</strong>
+              <span id="confirmUser"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="goToScanner()">← Voltar</button>
+          <button class="btn btn-primary" onclick="submitMovement()">✓ Confirmar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QR CODE SCANNER LIBRARY -->
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+
+  <!-- SERVICE WORKER (PWA) -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(err => console.log('SW failed:', err));
+    }
+  </script>
+
+  <!-- MAIN APP LOGIC -->
+  <script>
+    // ============ STATE ============
+    const state = {
+      user: null,
+      scannedCode: null,
+      scannedProduct: null,
+      movementType: null,
+      unidade: null,
+      paciente: null,
+      appsScriptUrl: null // será preenchido com sua URL do Apps Script
+    };
+
+    const screens = {
+      login: document.getElementById('loginScreen'),
+      scanner: document.getElementById('scannerScreen'),
+      confirmation: document.getElementById('confirmationScreen')
+    };
+
+    // ============ CONFIGURAÇÃO ============
+    // IMPORTANTE: Cole aqui a URL da sua implantação do Apps Script
+    // Exemplo: https://script.google.com/macros/d/YOUR_DEPLOYMENT_ID/userweb
+    state.appsScriptUrl = localStorage.getItem('appsScriptUrl') || 
+      prompt('Cole a URL do Apps Script do Estoque AP:\n\n' +
+             'Você encontra em:\n' +
+             '1. Abra Estoque AP no navegador\n' +
+             '2. Apps Script → Implantar → Nova implantação\n' +
+             '3. Tipo: Aplicativo da Web\n' +
+             '4. Copie a URL (começa com https://script.google.com/macros...)',
+             '');
+    
+    if (state.appsScriptUrl) {
+      localStorage.setItem('appsScriptUrl', state.appsScriptUrl);
+    }
+
+    // ============ UI FUNCTIONS ============
+    function showScreen(screenName) {
+      Object.values(screens).forEach(s => s.classList.remove('active'));
+      screens[screenName].classList.add('active');
+    }
+
+    function showStatus(message, type = 'info') {
+      const msg = document.getElementById('statusMessage');
+      msg.textContent = message;
+      msg.className = `status-message show ${type}`;
+      setTimeout(() => msg.classList.remove('show'), 3000);
+    }
+
+    function updateUIElements() {
+      const showPaciente = state.movementType === 'baixa';
+      document.getElementById('pacienteContainer').style.display = 
+        showPaciente ? 'block' : 'none';
+    }
+
+    function updateOperationType() {
+      state.movementType = document.getElementById('movementType').value;
+      updateUIElements();
+    }
+
+    // ============ LOGIN ============
+    async function handleLogin() {
+      const name = document.getElementById('loginName').value.trim().toUpperCase();
+      const pin = document.getElementById('loginPin').value;
+
+      if (!name || !pin) {
+        showStatus('Preencha nome e PIN', 'error');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${state.appsScriptUrl}?method=webLogin`, {
+          method: 'POST',
+          body: new URLSearchParams({ nome: name, pin: pin })
+        });
+
+        const result = await response.json();
+
+        if (result.ok) {
+          state.user = result;
+          document.getElementById('userInfo').textContent = `${result.nome} • ${result.unidade}`;
+          document.getElementById('unidade').value = result.unidade;
+          showStatus('Bem-vindo!', 'success');
+          showScreen('scanner');
+        } else {
+          showStatus(result.msg || 'Erro no login', 'error');
+        }
+      } catch (e) {
+        showStatus('Erro de conexão. Tente novamente.', 'error');
+        console.error(e);
+      }
+    }
+
+    // ============ SCANNER ============
+    async function startScanner() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+        });
+        const video = document.getElementById('video');
+        video.srcObject = stream;
+        scanQR();
+      } catch (err) {
+        showStatus('Câmera não disponível', 'error');
+      }
+    }
+
+    function scanQR() {
+      const video = document.getElementById('video');
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      function scan() {
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          ctx.drawImage(video, 0, 0);
+
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+          if (code) {
+            state.scannedCode = code.data;
+            document.getElementById('scanResult').textContent = `📍 Lido: ${state.scannedCode}`;
+            // Som de sucesso (opcional)
+            playBeep();
+          }
+        }
+        requestAnimationFrame(scan);
+      }
+      scan();
+    }
+
+    function playBeep() {
+      try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        oscillator.connect(gain);
+        gain.connect(audioContext.destination);
+        oscillator.frequency.value = 800;
+        oscillator.type = 'sine';
+        gain.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.1);
+      } catch (e) {
+        // Sem som se não tiver suporte
+      }
+    }
+
+    async function goToConfirmation() {
+      if (!state.scannedCode || !state.movementType || !state.unidade) {
+        showStatus('Escaneie um código, selecione tipo e unidade', 'error');
+        return;
+      }
+
+      // Buscar dados do produto/kit
+      try {
+        const response = await fetch(
+          `${state.appsScriptUrl}?method=webBuscarProduto&scan=${encodeURIComponent(state.scannedCode)}`
+        );
+        const product = await response.json();
+
+        if (product) {
+          state.scannedProduct = product;
+          
+          // Preencher confirmação
+          document.getElementById('confirmType').textContent = 
+            state.movementType === 'entrada' ? '📥 Entrada' : '📤 Baixa/Consumo';
+          document.getElementById('confirmProduct').textContent = 
+            product.nome || product.produto || 'Produto desconhecido';
+          document.getElementById('confirmCode').textContent = 
+            product.codigo_interno || state.scannedCode;
+          document.getElementById('confirmUnit').textContent = state.unidade;
+          document.getElementById('confirmUser').textContent = state.user.nome;
+
+          // Mostrar campo paciente se for baixa
+          const pacienteBox = document.getElementById('confirmPatientBox');
+          if (state.movementType === 'baixa') {
+            pacienteBox.style.display = 'flex';
+            document.getElementById('confirmPatient').textContent = 
+              state.paciente || '(sem paciente)';
+          } else {
+            pacienteBox.style.display = 'none';
+          }
+
+          showScreen('confirmation');
+        } else {
+          showStatus('Produto não encontrado', 'error');
+        }
+      } catch (e) {
+        showStatus('Erro ao buscar produto', 'error');
+        console.error(e);
+      }
+    }
+
+    async function submitMovement() {
+      const btn = event.target;
+      btn.disabled = true;
+      btn.textContent = 'Salvando...';
+
+      try {
+        let method, params;
+
+        if (state.movementType === 'entrada') {
+          method = 'webEntradaRapida';
+          params = {
+            codInterno: state.scannedCode,
+            qtd: 1,
+            unidade: state.unidade,
+            responsavel: state.user.nome
+          };
+        } else {
+          method = 'webBaixaRapida';
+          params = {
+            codInterno: state.scannedCode,
+            qtd: 1,
+            unidade: state.unidade,
+            responsavel: state.user.nome,
+            obs: state.paciente ? `Paciente: ${state.paciente}` : ''
+          };
+        }
+
+        const response = await fetch(`${state.appsScriptUrl}?method=${method}`, {
+          method: 'POST',
+          body: new URLSearchParams(params)
+        });
+
+        const result = await response.json();
+
+        if (result.ok) {
+          showStatus(`✓ ${result.msg}`, 'success');
+          state.scannedCode = null;
+          state.paciente = document.getElementById('paciente').value = '';
+          setTimeout(() => showScreen('scanner'), 1500);
+        } else {
+          showStatus(`✗ ${result.msg}`, 'error');
+        }
+      } catch (e) {
+        showStatus('Erro ao salvar movimento', 'error');
+        console.error(e);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '✓ Confirmar';
+      }
+    }
+
+    function goToScanner() {
+      showScreen('scanner');
+    }
+
+    // ============ LOGOUT ============
+    function handleLogout() {
+      if (confirm('Desconectar?')) {
+        state.user = null;
+        document.getElementById('loginName').value = '';
+        document.getElementById('loginPin').value = '';
+        showScreen('login');
+      }
+    }
+
+    // ============ INICIAR APP ============
+    window.addEventListener('load', () => {
+      startScanner();
+    });
+
+    // Parar video ao desconectar
+    window.addEventListener('beforeunload', () => {
+      const video = document.getElementById('video');
+      if (video.srcObject) {
+        video.srcObject.getTracks().forEach(track => track.stop());
+      }
+    });
+  </script>
+</body>
+</html>

@@ -454,7 +454,7 @@
 
         <div class="btn-group">
           <button class="btn btn-secondary" onclick="goToScanner()">← Voltar</button>
-          <button class="btn btn-primary" onclick="submitMovement()">✓ Confirmar</button>
+          <button class="btn btn-primary" onclick="submitMovement(event)">✓ Confirmar</button>
         </div>
       </div>
     </div>
@@ -507,8 +507,9 @@
     }
 
     function updateUIElements() {
+      state.unidade = document.getElementById('unidade').value;
       const showPaciente = state.movementType === 'baixa';
-      document.getElementById('pacienteContainer').style.display = 
+      document.getElementById('pacienteContainer').style.display =
         showPaciente ? 'block' : 'none';
     }
 
@@ -539,8 +540,10 @@
           state.user = result;
           document.getElementById('userInfo').textContent = `${result.nome} • ${result.unidade}`;
           document.getElementById('unidade').value = result.unidade;
+          state.unidade = result.unidade;
           showStatus('Bem-vindo!', 'success');
           showScreen('scanner');
+          startScanner();
         } else {
           showStatus(result.msg || 'Erro no login', 'error');
         }
@@ -614,6 +617,8 @@
         return;
       }
 
+      state.paciente = document.getElementById('paciente').value.trim();
+
       // Buscar dados do produto/kit
       try {
         const response = await fetch(
@@ -654,7 +659,7 @@
       }
     }
 
-    async function submitMovement() {
+    async function submitMovement(event) {
       const btn = event.target;
       btn.disabled = true;
       btn.textContent = 'Salvando...';
@@ -712,19 +717,21 @@
     // ============ LOGOUT ============
     function handleLogout() {
       if (confirm('Desconectar?')) {
+        const video = document.getElementById('video');
+        if (video.srcObject) {
+          video.srcObject.getTracks().forEach(track => track.stop());
+          video.srcObject = null;
+        }
         state.user = null;
+        state.unidade = null;
+        state.scannedCode = null;
         document.getElementById('loginName').value = '';
         document.getElementById('loginPin').value = '';
         showScreen('login');
       }
     }
 
-    // ============ INICIAR APP ============
-    window.addEventListener('load', () => {
-      startScanner();
-    });
-
-    // Parar video ao desconectar
+    // Parar video ao fechar a página
     window.addEventListener('beforeunload', () => {
       const video = document.getElementById('video');
       if (video.srcObject) {

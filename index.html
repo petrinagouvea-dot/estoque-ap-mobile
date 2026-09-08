@@ -353,12 +353,14 @@
           
           <div class="form-group">
             <label for="loginName">Seu Nome</label>
-            <input 
-              id="loginName" 
-              type="text" 
+            <input
+              id="loginName"
+              type="text"
               placeholder="Ex: PETRINA"
               autocomplete="off"
+              list="funcionariosList"
             >
+            <datalist id="funcionariosList"></datalist>
           </div>
 
           <div class="form-group">
@@ -492,6 +494,25 @@
     // ============ CONFIGURAÇÃO ============
     // URL fixa da implantação do Apps Script (Estoque AP)
     state.appsScriptUrl = 'https://script.google.com/macros/s/AKfycbxM3_IRsUS4R6FalRxuD24mm-Fx7q_aWRyY8nWVFbrFt1BMQCYw-ao-ilzo2OL2DRm0/exec';
+
+    // Carrega a lista de funcionários ativos para aparecer como opção
+    // ao tocar no campo "Seu Nome" (evita depender de sugestão do celular)
+    async function loadFuncionarios() {
+      try {
+        const response = await fetch(`${state.appsScriptUrl}?method=webListarFuncionarios`);
+        const nomes = await response.json();
+        const datalist = document.getElementById('funcionariosList');
+        datalist.innerHTML = '';
+        (Array.isArray(nomes) ? nomes : []).forEach(nome => {
+          const opt = document.createElement('option');
+          opt.value = nome;
+          datalist.appendChild(opt);
+        });
+      } catch (e) {
+        console.warn('Não foi possível carregar a lista de funcionários:', e);
+      }
+    }
+    loadFuncionarios();
 
     // ============ UI FUNCTIONS ============
     function showScreen(screenName) {

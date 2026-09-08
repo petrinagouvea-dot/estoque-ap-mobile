@@ -397,7 +397,8 @@
               <option value="BARRA">📍 Barra</option>
               <option value="NOVA IGUAÇU">📍 Nova Iguaçu</option>
               <option value="MATO GROSSO">📍 Mato Grosso</option>
-              <option value="FUTEBOL">📍 Futebol</option>
+              <option value="QRS GUILHERME">📍 QRS Guilherme</option>
+              <option value="QRS ANNY">📍 QRS Anny</option>
             </select>
           </div>
 
@@ -489,20 +490,8 @@
     };
 
     // ============ CONFIGURAÇÃO ============
-    // IMPORTANTE: Cole aqui a URL da sua implantação do Apps Script
-    // Exemplo: https://script.google.com/macros/d/YOUR_DEPLOYMENT_ID/userweb
-    state.appsScriptUrl = localStorage.getItem('appsScriptUrl') || 
-      prompt('Cole a URL do Apps Script do Estoque AP:\n\n' +
-             'Você encontra em:\n' +
-             '1. Abra Estoque AP no navegador\n' +
-             '2. Apps Script → Implantar → Nova implantação\n' +
-             '3. Tipo: Aplicativo da Web\n' +
-             '4. Copie a URL (começa com https://script.google.com/macros...)',
-             '');
-    
-    if (state.appsScriptUrl) {
-      localStorage.setItem('appsScriptUrl', state.appsScriptUrl);
-    }
+    // URL fixa da implantação do Apps Script (Estoque AP)
+    state.appsScriptUrl = 'https://script.google.com/macros/s/AKfycbxM3_IRsUS4R6FalRxuD24mm-Fx7q_aWRyY8nWVFbrFt1BMQCYw-ao-ilzo2OL2DRm0/exec';
 
     // ============ UI FUNCTIONS ============
     function showScreen(screenName) {

@@ -475,7 +475,17 @@
   <!-- SERVICE WORKER (PWA) -->
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(err => console.log('SW failed:', err));
+      navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+        .then(reg => { try { reg.update(); } catch (e) {} })
+        .catch(err => console.log('SW failed:', err));
+      // Quando uma versão nova do app assumir, recarrega a tela uma vez
+      let _swRecarregou = false;
+      const _tinhaSW = !!navigator.serviceWorker.controller;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (_swRecarregou || !_tinhaSW) return;
+        _swRecarregou = true;
+        window.location.reload();
+      });
     }
   </script>
 

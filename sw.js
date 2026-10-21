@@ -1,6 +1,6 @@
 // Service Worker para Estoque AP — Funcionalidade Offline
 
-const CACHE_NAME = 'estoque-ap-v5';
+const CACHE_NAME = 'estoque-ap-v6';
 const URLS_TO_CACHE = [
   './',
   './index.html',
@@ -47,6 +47,24 @@ self.addEventListener('fetch', event => {
           status: 503,
           statusText: 'Service Unavailable'
         }))
+    );
+    return;
+  }
+
+  // Páginas/HTML: REDE PRIMEIRO (sempre pega a versão nova; cache só se offline)
+  const isPage = event.request.mode === 'navigate' ||
+    event.request.url.endsWith('.html') || event.request.url.endsWith('/');
+  if (isPage) {
+    event.respondWith(
+      fetch(event.request, { cache: 'no-store' })
+        .then(resp => {
+          if (resp && resp.status === 200) {
+            const copy = resp.clone();
+            caches.open(CACHE_NAME).then(c => c.put(event.request, copy));
+          }
+          return resp;
+        })
+        .catch(() => caches.match(event.request).then(c => c || caches.match('./index.html')))
     );
     return;
   }

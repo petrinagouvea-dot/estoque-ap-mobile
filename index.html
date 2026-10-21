@@ -366,10 +366,18 @@
           <div class="form-group">
             <label for="loginPin">PIN (4-6 dígitos)</label>
             <input 
-              id="loginPin" 
-              type="password" 
+              id="loginPin"
+              type="text"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              autocomplete="off"
+              autocorrect="off"
+              autocapitalize="off"
+              spellcheck="false"
+              name="ap-pin-nao-salvar"
               placeholder="••••"
               maxlength="6"
+              style="-webkit-text-security: disc; text-security: disc;"
             >
           </div>
 
@@ -483,6 +491,7 @@
       const _tinhaSW = !!navigator.serviceWorker.controller;
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (_swRecarregou || !_tinhaSW) return;
+        if (typeof state !== 'undefined' && state.user) return; // não derruba quem já está logado
         _swRecarregou = true;
         window.location.reload();
       });
@@ -586,7 +595,7 @@
     // ============ LOGIN ============
     async function handleLogin() {
       const name = document.getElementById('loginName').value.trim().toUpperCase();
-      const pin = document.getElementById('loginPin').value;
+      const pin = document.getElementById('loginPin').value.replace(/\D/g, '');
 
       if (!name || !pin) {
         showStatus('Preencha nome e PIN', 'error');

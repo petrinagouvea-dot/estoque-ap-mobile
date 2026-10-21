@@ -404,6 +404,13 @@
             </select>
           </div>
 
+          <div id="medicoContainer" style="display: none;">
+            <label style="font-size: 12px; display: block; margin-bottom: 6px;">MÉDICO RESPONSÁVEL (obrigatório)</label>
+            <select id="medico" onchange="state.medico = this.value; try { localStorage.setItem('ap_ultimo_medico', this.value); } catch(e) {}">
+              <option value="">Carregando médicos...</option>
+            </select>
+          </div>
+
           <div id="pacienteContainer" style="display: none;">
             <label style="font-size: 12px; display: block; margin-bottom: 6px;">PACIENTE (opcional)</label>
             <input 
@@ -482,6 +489,7 @@
       movementType: null,
       unidade: null,
       paciente: null,
+      medico: '',
       appsScriptUrl: null // será preenchido com sua URL do Apps Script
     };
 
@@ -514,6 +522,30 @@
     }
     loadFuncionarios();
 
+    // Carrega a lista de médicos (obrigatório em toda baixa desde a Versão 118)
+    async function loadMedicos() {
+      const sel = document.getElementById('medico');
+      try {
+        const response = await fetch(`${state.appsScriptUrl}?method=webListarMedicos`);
+        const nomes = await response.json();
+        let ultimo = '';
+        try { ultimo = localStorage.getItem('ap_ultimo_medico') || ''; } catch (e) {}
+        sel.innerHTML = '<option value="">Selecione o médico...</option>';
+        (Array.isArray(nomes) ? nomes : []).forEach(nome => {
+          const opt = document.createElement('option');
+          opt.value = nome;
+          opt.textContent = nome;
+          sel.appendChild(opt);
+        });
+        if (ultimo && Array.isArray(nomes) && nomes.indexOf(ultimo) >= 0) sel.value = ultimo;
+        state.medico = sel.value;
+      } catch (e) {
+        sel.innerHTML = '<option value="">Erro ao carregar médicos</option>';
+        console.warn('Não foi possível carregar a lista de médicos:', e);
+      }
+    }
+    loadMedicos();
+
     // ============ UI FUNCTIONS ============
     function showScreen(screenName) {
       Object.values(screens).forEach(s => s.classList.remove('active'));
@@ -531,6 +563,8 @@
       state.unidade = document.getElementById('unidade').value;
       const showPaciente = state.movementType === 'baixa';
       document.getElementById('pacienteContainer').style.display =
+        showPaciente ? 'block' : 'none';
+      document.getElementById('medicoContainer').style.display =
         showPaciente ? 'block' : 'none';
     }
 
@@ -639,6 +673,11 @@
       }
 
       state.paciente = document.getElementById('paciente').value.trim();
+      state.medico = document.getElementById('medico').value;
+      if (state.movementType === 'baixa' && !state.medico) {
+        showStatus('Escolha o médico responsável', 'error');
+        return;
+      }
 
       // Buscar dados do produto/kit
       try {
@@ -665,7 +704,7 @@
           if (state.movementType === 'baixa') {
             pacienteBox.style.display = 'flex';
             document.getElementById('confirmPatient').textContent = 
-              state.paciente || '(sem paciente)';
+              (state.paciente || '(sem paciente)') + ' • Dr(a). ' + state.medico;
           } else {
             pacienteBox.style.display = 'none';
           }
@@ -703,6 +742,7 @@
             qtd: 1,
             unidade: state.unidade,
             responsavel: state.user.nome,
+            medico: state.medico,
             obs: state.paciente ? `Paciente: ${state.paciente}` : ''
           };
         }

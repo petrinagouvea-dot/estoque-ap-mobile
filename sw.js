@@ -1,6 +1,6 @@
 // Service Worker para Estoque AP — Funcionalidade Offline
 
-const CACHE_NAME = 'estoque-ap-v8';
+const CACHE_NAME = 'estoque-ap-v9';
 const URLS_TO_CACHE = [
   './',
   './index.html',
@@ -56,7 +56,7 @@ self.addEventListener('fetch', event => {
     event.request.url.endsWith('.html') || event.request.url.endsWith('/');
   if (isPage) {
     event.respondWith(
-      fetch(event.request, { cache: 'no-store' })
+      fetch(event.request)
         .then(resp => {
           if (resp && resp.status === 200) {
             const copy = resp.clone();
@@ -64,7 +64,7 @@ self.addEventListener('fetch', event => {
           }
           return resp;
         })
-        .catch(() => caches.match(event.request).then(c => c || caches.match('./index.html')))
+        .catch(() => caches.match(event.request).then(c => c || caches.match('./index.html')).then(c => c || caches.match('./')).then(c => c || new Response('Sem conexão. Tente de novo.', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } })))
     );
     return;
   }

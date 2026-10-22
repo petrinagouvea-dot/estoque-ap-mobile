@@ -1,6 +1,6 @@
 // Service Worker para Estoque AP — Funcionalidade Offline
 
-const CACHE_NAME = 'estoque-ap-v7';
+const CACHE_NAME = 'estoque-ap-v8';
 const URLS_TO_CACHE = [
   './',
   './index.html',

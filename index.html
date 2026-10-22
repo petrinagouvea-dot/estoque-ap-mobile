@@ -413,7 +413,7 @@
           </div>
 
           <div id="medicoContainer" style="display: none;">
-            <label style="font-size: 12px; display: block; margin-bottom: 6px;">MÉDICO RESPONSÁVEL (obrigatório)</label>
+            <label style="font-size: 12px; display: block; margin-bottom: 6px;">MÉDICO RESPONSÁVEL (use NENHUM p/ material de reposição)</label>
             <select id="medico" onchange="state.medico = this.value; try { localStorage.setItem('ap_ultimo_medico', this.value); } catch(e) {}">
               <option value="">Carregando médicos...</option>
             </select>
@@ -430,6 +430,20 @@
 
           <div class="scanner-output">
             <span id="scanResult">Aponte para o código...</span>
+          </div>
+
+          <div>
+            <label style="font-size: 12px; display: block; margin-bottom: 6px;">🔍 OU BUSQUE PELO NOME DO PRODUTO</label>
+            <input
+              id="buscaNome"
+              type="text"
+              list="produtosList"
+              placeholder="Digite parte do nome..."
+              autocomplete="off"
+              oninput="selecionarPorNome(this.value)"
+              onchange="selecionarPorNome(this.value)"
+            >
+            <datalist id="produtosList"></datalist>
           </div>
 
           <button class="btn btn-secondary" onclick="goToConfirmation()">Confirmar Leitura</button>
@@ -564,6 +578,35 @@
       }
     }
     loadMedicos();
+
+    // Busca por nome: carrega a lista de produtos (nome -> código interno)
+    state.produtosPorNome = {};
+    async function loadProdutos() {
+      try {
+        const response = await fetch(`${state.appsScriptUrl}?method=webListarProdutosNomes`);
+        const lista = await response.json();
+        const dl = document.getElementById('produtosList');
+        dl.innerHTML = '';
+        state.produtosPorNome = {};
+        (Array.isArray(lista) ? lista : []).forEach(p => {
+          if (!p || !p.nome || !p.codigo_interno) return;
+          state.produtosPorNome[p.nome] = p.codigo_interno;
+          const opt = document.createElement('option');
+          opt.value = p.nome;
+          dl.appendChild(opt);
+        });
+      } catch (e) {
+        console.warn('Não foi possível carregar a lista de produtos:', e);
+      }
+    }
+    loadProdutos();
+
+    function selecionarPorNome(valor) {
+      const cod = state.produtosPorNome[valor];
+      if (!cod) return;
+      state.scannedCode = cod;
+      document.getElementById('scanResult').textContent = `📍 Selecionado: ${valor}`;
+    }
 
     // ============ UI FUNCTIONS ============
     function showScreen(screenName) {
@@ -777,6 +820,8 @@
           showStatus(`✓ ${result.msg}`, 'success');
           state.scannedCode = null;
           state.paciente = document.getElementById('paciente').value = '';
+          document.getElementById('buscaNome').value = '';
+          document.getElementById('scanResult').textContent = 'Aponte para o código...';
           setTimeout(() => showScreen('scanner'), 1500);
         } else {
           showStatus(`✗ ${result.msg}`, 'error');

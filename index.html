@@ -169,6 +169,7 @@
       gap: 12px;
     }
 
+    .scanner-controls input,
     .scanner-controls select {
       padding: 10px 12px;
       border: 2px solid var(--color-accent);
@@ -417,6 +418,11 @@
             <select id="medico" onchange="state.medico = this.value; try { localStorage.setItem('ap_ultimo_medico', this.value); } catch(e) {}">
               <option value="">Carregando médicos...</option>
             </select>
+          </div>
+
+          <div>
+            <label style="font-size: 12px; display: block; margin-bottom: 6px;">QUANTIDADE</label>
+            <input id="quantidade" type="number" inputmode="numeric" min="1" step="1" value="1">
           </div>
 
           <div id="pacienteContainer" style="display: none;">
@@ -755,7 +761,8 @@
           document.getElementById('confirmType').textContent = 
             state.movementType === 'entrada' ? '📥 Entrada' : '📤 Baixa/Consumo';
           document.getElementById('confirmProduct').textContent = 
-            product.nome || product.produto || 'Produto desconhecido';
+            (product.nome || product.produto || 'Produto desconhecido') +
+            '  ×  ' + Math.max(1, parseInt(document.getElementById('quantidade').value, 10) || 1);
           document.getElementById('confirmCode').textContent = 
             product.codigo_interno || state.scannedCode;
           document.getElementById('confirmUnit').textContent = state.unidade;
@@ -793,7 +800,7 @@
           method = 'webEntradaRapida';
           params = {
             codInterno: state.scannedCode,
-            qtd: 1,
+            qtd: Math.max(1, parseInt(document.getElementById('quantidade').value, 10) || 1),
             unidade: state.unidade,
             responsavel: state.user.nome
           };
@@ -801,7 +808,7 @@
           method = 'webBaixaRapida';
           params = {
             codInterno: state.scannedCode,
-            qtd: 1,
+            qtd: Math.max(1, parseInt(document.getElementById('quantidade').value, 10) || 1),
             unidade: state.unidade,
             responsavel: state.user.nome,
             medico: state.medico,
@@ -821,6 +828,7 @@
           state.scannedCode = null;
           state.paciente = document.getElementById('paciente').value = '';
           document.getElementById('buscaNome').value = '';
+          document.getElementById('quantidade').value = '1';
           document.getElementById('scanResult').textContent = 'Aponte para o código...';
           setTimeout(() => showScreen('scanner'), 1500);
         } else {
